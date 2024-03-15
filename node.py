@@ -39,7 +39,7 @@ class Raft:
         logging.info("Creating socket and binding...")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("127.0.0.1", port))
-        self.socket.settimeout(0.5)  # Non-blocking with timeout
+        self.socket.settimeout(0.5)
 
     def reset_election_timeout(self):
         if self.election_timeout is not None:
@@ -124,7 +124,6 @@ class Raft:
             logging.info(f"Node {self.node_id} votes for node {sender_id} for term {sender_term}")
             self.voted_for = sender_id
             self.send_vote_response(sender_id, self.current_term, True)
-            # Reset the election timeout since we've acknowledged a candidate
             self.reset_election_timeout()
         else:
             logging.info(f"Node {self.node_id} denies vote for node {sender_id} for term {sender_term}")
@@ -144,11 +143,10 @@ class Raft:
         # Ensure the response is for the current term and we are a candidate
         if sender_term == self.current_term and self.current_role == 'candidate' and vote_granted:
             self.votes_received.add(sender_id)
-            # Check if we have a majority
+            # Check if we reach the quorum
             if len(self.votes_received) > len(self.neighbors_ports) / 2:
                 self.current_role = 'leader'
                 logging.info(f"Node {self.node_id} becomes the leader for term {self.current_term}")
-                # Once becoming a leader, start sending heartbeats
                 self.send_heartbeat_to_all()
                 self.reset_election_timeout()
 
